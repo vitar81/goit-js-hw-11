@@ -1,8 +1,14 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import { createPhotoCard, appendGallery, clearGallery } from './js/gallery';
 import { fetchPhotos } from './js/api';
+import { createPhotoCard, appendGallery, clearGallery } from './js/gallery';
+
+const gallerySelector = document.querySelector('.gallery');
+const searchForm = document.querySelector('.search-form');
+const searchInput = searchForm.querySelector('input');
+
+const gallery = new SimpleLightbox('.gallery a', { enableKeyboard: true });
 
 const state = {
   currentPage: 1,
@@ -13,13 +19,8 @@ const state = {
   errorNotified: false,
 };
 
-const gallerySelector = document.querySelector('.gallery');
-const searchForm = document.querySelector('.search-form');
-const searchInput = searchForm.querySelector('input');
-const gallery = new SimpleLightbox('.gallery a', { enableKeyboard: true });
-
 searchForm.addEventListener('submit', handleFormSubmit);
-window.addEventListener('scroll', handleScroll);
+window.addEventListener('scroll', debounce(handleScroll, 300));
 
 let isLoadingMore = false;
 
@@ -63,10 +64,7 @@ async function handleScroll() {
 
       state.currentPage += 1;
     } catch (error) {
-      console.error('Error loading more images:', error.message);
-      Notify.failure(
-        "We're sorry, but there was an error loading more images."
-      );
+      handleApiError(error);
       state.errorNotified = true;
     } finally {
       isLoadingMore = false;
@@ -103,11 +101,27 @@ async function handleFormSubmit(e) {
 
     Notify.success(`Found ${state.total} images.`);
   } catch (error) {
-    console.error('Error handling form submit:', error.message);
-    Notify.failure('Error handling form submit. Please try again.');
+    handleApiError(error);
   }
 }
 
 function renderPhotos(photos) {
   return photos.map(photo => createPhotoCard(photo)).join('');
+}
+
+function handleApiError(error) {
+  console.error('Error:', error.message);
+  Notify.failure('An error occurred. Please try again.');
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
