@@ -42,6 +42,8 @@ async function handleScroll() {
         return;
       }
 
+      state.currentPage += 1;
+
       const { fetchedTotal, photos } = await fetchPhotos(
         searchQueryValue,
         state.currentPage,
@@ -61,8 +63,6 @@ async function handleScroll() {
         Notify.info('All images loaded.');
         state.errorNotified = true;
       }
-
-      state.currentPage += 1;
     } catch (error) {
       handleApiError(error);
       state.errorNotified = true;
